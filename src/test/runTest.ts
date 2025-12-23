@@ -11,6 +11,7 @@ async function main(): Promise<void> {
     const extensionTestsPath = path.resolve(__dirname, "./suite/index");
 
     const vscodeExecutablePath = await downloadAndUnzipVSCode("1.93.0");
+    // macOS の Electron 直叩きだと --no-sandbox などが bad option で落ちるため、CLI ラッパーを使う。
     const vscodeCliPath =
       resolveCliPathFromVSCodeExecutablePath(vscodeExecutablePath);
 
