@@ -37,7 +37,8 @@
       "panel": [
         {
           "id": "linePreviewMarkdownPanel",
-          "title": "Line Preview"
+          "title": "Line Preview",
+          "icon": "resources/line-preview.svg"
         }
       ]
     },
