@@ -21,6 +21,11 @@ pnpm watch
 
 Launch the extension with `F5` (Run Extension).
 
+## Testing
+```bash
+pnpm test
+```
+
 ## Packaging
 ```bash
 pnpm package
