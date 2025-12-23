@@ -6,6 +6,7 @@
 - Do not change pinned versions without explicit instruction.
 - Do not introduce `latest`, ranges, or floating versions.
 - Toolchain upgrades require documentation in `README.md`.
+- `mise` itself is managed externally (package manager), do not pin it in this repo.
 
 ## Engineering Rules
 - Dispose all VS Code disposables.

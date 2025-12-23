@@ -46,6 +46,5 @@ The toolchain is pinned for reproducibility and AI safety. To upgrade:
 3) Commit as a dedicated toolchain upgrade change.
 
 Current pins:
-- mise: 2024.12.0
 - node: 22.11.0 (stable LTS)
 - pnpm: 9.15.1
