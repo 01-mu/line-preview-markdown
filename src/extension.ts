@@ -1,3 +1,4 @@
+import * as path from "path";
 import * as vscode from "vscode";
 
 type RenderMode = "line" | "paragraph";
@@ -124,7 +125,7 @@ class PreviewController implements vscode.Disposable {
     }
 
     if (
-      editor.document.languageId !== "markdown" ||
+      !isMarkdownDocument(editor.document) ||
       this.config.excludeLanguages.includes(editor.document.languageId)
     ) {
       editor.setDecorations(this.decorationType, []);
@@ -207,6 +208,15 @@ function createDecorationType(theme: ThemeMode): vscode.TextEditorDecorationType
       fontStyle: "italic"
     }
   });
+}
+
+function isMarkdownDocument(document: vscode.TextDocument): boolean {
+  if (document.languageId === "markdown") {
+    return true;
+  }
+
+  const extension = path.extname(document.fileName).toLowerCase();
+  return extension === ".md" || extension === ".markdown";
 }
 
 function buildPreviewText(
