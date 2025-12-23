@@ -1,3 +1,5 @@
+# vscodeの構造的に難しそうで凍結中
+
 # line-preview-markdown
 
 Inline markdown previews rendered alongside the focused line (or paragraph) in VS Code,
