@@ -14,7 +14,8 @@
     "onStartupFinished",
     "onLanguage:markdown",
     "onCommand:linePreviewMarkdown.toggle",
-    "onCommand:linePreviewMarkdown.refresh"
+    "onCommand:linePreviewMarkdown.refresh",
+    "onCommand:linePreviewMarkdown.togglePanel"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -26,8 +27,29 @@
       {
         "command": "linePreviewMarkdown.refresh",
         "title": "Line Preview Markdown: Refresh"
+      },
+      {
+        "command": "linePreviewMarkdown.togglePanel",
+        "title": "Line Preview Markdown: Toggle Panel"
       }
     ],
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "linePreviewMarkdownPanel",
+          "title": "Line Preview"
+        }
+      ]
+    },
+    "views": {
+      "linePreviewMarkdownPanel": [
+        {
+          "type": "webview",
+          "id": "linePreviewMarkdown.preview",
+          "name": "Preview"
+        }
+      ]
+    },
     "configuration": {
       "title": "Line Preview Markdown",
       "properties": {
@@ -76,7 +98,15 @@
           "description": "Language IDs that should not show previews."
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "linePreviewMarkdown.togglePanel",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m",
+        "when": "editorTextFocus"
+      }
+    ]
   },
   "scripts": {
     "build": "pnpm exec tsc -p .",

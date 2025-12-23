@@ -21,6 +21,7 @@ class PreviewController implements vscode.Disposable {
   private config: ExtensionConfig;
   private renderTimer: NodeJS.Timeout | undefined;
   private disposables: vscode.Disposable[] = [];
+  private panelProvider: PreviewPanelProvider;
 
   constructor(private context: vscode.ExtensionContext) {
     this.config = readConfig();
@@ -32,6 +33,14 @@ class PreviewController implements vscode.Disposable {
     this.statusBar.command = `${EXTENSION_NAMESPACE}.toggle`;
     this.updateStatusBar();
     this.statusBar.show();
+
+    this.panelProvider = new PreviewPanelProvider();
+    this.context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        PreviewPanelProvider.viewType,
+        this.panelProvider
+      )
+    );
 
     this.disposables.push(
       this.statusBar,
@@ -76,6 +85,17 @@ class PreviewController implements vscode.Disposable {
       .update("enabled", newValue, target);
   }
 
+  public async togglePanel(): Promise<void> {
+    if (this.panelProvider.isVisible()) {
+      await vscode.commands.executeCommand("workbench.action.closePanel");
+      return;
+    }
+
+    await vscode.commands.executeCommand(
+      "workbench.view.extension.linePreviewMarkdownPanel"
+    );
+  }
+
   private reloadConfig(): void {
     const nextConfig = readConfig();
     const themeChanged = nextConfig.theme !== this.config.theme;
@@ -115,12 +135,19 @@ class PreviewController implements vscode.Disposable {
 
   private render(): void {
     const editor = vscode.window.activeTextEditor;
+    const panelContext = {
+      enabled: this.config.enabled,
+      theme: this.config.theme
+    };
+
     if (!editor) {
+      this.panelProvider.update("", panelContext);
       return;
     }
 
     if (!this.config.enabled) {
       editor.setDecorations(this.decorationType, []);
+      this.panelProvider.update("", panelContext);
       return;
     }
 
@@ -129,19 +156,24 @@ class PreviewController implements vscode.Disposable {
       this.config.excludeLanguages.includes(editor.document.languageId)
     ) {
       editor.setDecorations(this.decorationType, []);
+      this.panelProvider.update("", panelContext);
       return;
     }
 
     try {
-      const previewText = buildPreviewText(
+      const previewSource = buildPreviewSource(
         editor,
         this.config.renderMode,
         this.config.maxPreviewLength
       );
-      if (!previewText) {
+      if (!previewSource) {
         editor.setDecorations(this.decorationType, []);
+        this.panelProvider.update("", panelContext);
         return;
       }
+
+      const previewText = renderInlineMarkdownToText(previewSource);
+      const previewHtml = renderInlineMarkdownToHtml(previewSource);
 
       const selectionLine = editor.selection.active.line;
       const line = editor.document.lineAt(selectionLine);
@@ -155,8 +187,10 @@ class PreviewController implements vscode.Disposable {
         }
       };
       editor.setDecorations(this.decorationType, [decoration]);
+      this.panelProvider.update(previewHtml, panelContext);
     } catch {
       editor.setDecorations(this.decorationType, []);
+      this.panelProvider.update("", panelContext);
     }
   }
 }
@@ -171,6 +205,9 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
     vscode.commands.registerCommand(`${EXTENSION_NAMESPACE}.refresh`, () =>
       controller.refresh()
+    ),
+    vscode.commands.registerCommand(`${EXTENSION_NAMESPACE}.togglePanel`, () =>
+      controller.togglePanel()
     )
   );
 
@@ -219,7 +256,7 @@ function isMarkdownDocument(document: vscode.TextDocument): boolean {
   return extension === ".md" || extension === ".markdown";
 }
 
-function buildPreviewText(
+function buildPreviewSource(
   editor: vscode.TextEditor,
   renderMode: RenderMode,
   maxPreviewLength: number
@@ -234,12 +271,12 @@ function buildPreviewText(
       lines.push(stripLineSyntax(document.lineAt(line).text));
     }
     const combined = lines.join(" ");
-    return truncate(renderInlineMarkdown(combined), maxPreviewLength);
+    return truncate(combined, maxPreviewLength);
   }
 
   const lineText = document.lineAt(activeLine).text;
   const cleaned = stripLineSyntax(lineText);
-  return truncate(renderInlineMarkdown(cleaned), maxPreviewLength);
+  return truncate(cleaned, maxPreviewLength);
 }
 
 function getParagraphRange(
@@ -272,7 +309,7 @@ function stripLineSyntax(line: string): string {
   return text;
 }
 
-function renderInlineMarkdown(text: string): string {
+function renderInlineMarkdownToText(text: string): string {
   let output = text;
   output = output.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1");
   output = output.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
@@ -284,6 +321,32 @@ function renderInlineMarkdown(text: string): string {
   output = output.replace(/~~([^~]+)~~/g, "$1");
   output = output.replace(/\s+/g, " ").trim();
   return output;
+}
+
+function renderInlineMarkdownToHtml(text: string): string {
+  let output = escapeHtml(text);
+  output = output.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1");
+  output = output.replace(
+    /\[([^\]]+)\]\([^)]+\)/g,
+    '<span class="link">$1</span>'
+  );
+  output = output.replace(/`([^`]+)`/g, "<code>$1</code>");
+  output = output.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  output = output.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+  output = output.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  output = output.replace(/_([^_]+)_/g, "<em>$1</em>");
+  output = output.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+  output = output.replace(/\s+/g, " ").trim();
+  return output;
+}
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function truncate(text: string, maxLength: number): string {
@@ -300,4 +363,126 @@ function truncate(text: string, maxLength: number): string {
   }
 
   return `${text.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
+class PreviewPanelProvider
+  implements vscode.WebviewViewProvider, vscode.Disposable
+{
+  public static readonly viewType = "linePreviewMarkdown.preview";
+
+  private view: vscode.WebviewView | undefined;
+  private visible = false;
+  private lastContent = "";
+  private lastContext: { enabled: boolean; theme: ThemeMode } = {
+    enabled: true,
+    theme: "auto"
+  };
+
+  public resolveWebviewView(
+    webviewView: vscode.WebviewView
+  ): void | Thenable<void> {
+    this.view = webviewView;
+    this.visible = webviewView.visible;
+    webviewView.webview.options = {
+      enableScripts: false,
+      localResourceRoots: []
+    };
+    webviewView.webview.html = this.buildHtml(
+      this.lastContent,
+      this.lastContext
+    );
+    webviewView.onDidChangeVisibility(() => {
+      this.visible = webviewView.visible;
+    });
+  }
+
+  public dispose(): void {
+    this.view = undefined;
+  }
+
+  public isVisible(): boolean {
+    return this.visible;
+  }
+
+  public update(
+    htmlContent: string,
+    context: { enabled: boolean; theme: ThemeMode }
+  ): void {
+    this.lastContent = htmlContent;
+    this.lastContext = context;
+    if (!this.view) {
+      return;
+    }
+
+    this.view.webview.html = this.buildHtml(htmlContent, context);
+  }
+
+  private buildHtml(
+    htmlContent: string,
+    context: { enabled: boolean; theme: ThemeMode }
+  ): string {
+    const themeClass =
+      context.theme === "auto" ? "" : `theme-${context.theme}`;
+    const content = context.enabled
+      ? htmlContent || '<span class="muted">No preview</span>'
+      : '<span class="muted">Preview disabled</span>';
+
+    return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Line Preview</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        padding: 12px 14px;
+        font-family: var(--vscode-editor-font-family);
+        font-size: 13px;
+        color: var(--vscode-foreground);
+        background: var(--vscode-editor-background);
+      }
+      .container {
+        border: 1px solid var(--vscode-panel-border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: var(--vscode-editorWidget-background);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+      }
+      .muted {
+        color: var(--vscode-descriptionForeground);
+        font-style: italic;
+      }
+      code {
+        padding: 0 4px;
+        border-radius: 4px;
+        background: var(--vscode-textCodeBlock-background);
+        font-family: var(--vscode-editor-font-family);
+      }
+      .link {
+        color: var(--vscode-textLink-foreground);
+        text-decoration: underline;
+      }
+      del {
+        color: var(--vscode-descriptionForeground);
+      }
+      .theme-light body {
+        color: #1a1a1a;
+        background: #ffffff;
+      }
+      .theme-dark body {
+        color: #e6e6e6;
+        background: #1f1f1f;
+      }
+    </style>
+  </head>
+  <body class="${themeClass}">
+    <div class="container">${content}</div>
+  </body>
+</html>`;
+  }
 }

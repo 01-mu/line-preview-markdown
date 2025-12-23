@@ -1,6 +1,7 @@
 # line-preview-markdown
 
-Inline markdown previews rendered alongside the focused line (or paragraph) in VS Code.
+Inline markdown previews rendered alongside the focused line (or paragraph) in VS Code,
+with an optional rich preview panel.
 
 ## Toolchain (pinned)
 This repo uses `mise` to keep Node.js and pnpm fully pinned and reproducible.
@@ -30,6 +31,7 @@ Uses local `@vscode/vsce` (no global installs).
 ## Commands
 - `linePreviewMarkdown.toggle`: toggle inline preview
 - `linePreviewMarkdown.refresh`: refresh current preview
+- `linePreviewMarkdown.togglePanel`: toggle the preview panel (default: Cmd/Ctrl+Shift+M)
 
 ## Settings
 - `linePreviewMarkdown.enabled`

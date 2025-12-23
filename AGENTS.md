@@ -12,6 +12,7 @@
 - Dispose all VS Code disposables.
 - Handle errors gracefully.
 - Keep modules small and explicit.
+- If Webview is used, enforce CSP and disable scripts.
 
 ## AI Rules
 - Do not refactor unrelated code.
