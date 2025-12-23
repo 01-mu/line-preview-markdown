@@ -1,0 +1,129 @@
+{
+  "name": "line-preview-markdown",
+  "displayName": "Line Preview Markdown",
+  "description": "Inline markdown preview for the focused line.",
+  "version": "0.0.1",
+  "publisher": "line-preview",
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:markdown",
+    "onCommand:linePreviewMarkdown.toggle",
+    "onCommand:linePreviewMarkdown.refresh",
+    "onCommand:linePreviewMarkdown.togglePanel"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "linePreviewMarkdown.toggle",
+        "title": "Line Preview Markdown: Toggle"
+      },
+      {
+        "command": "linePreviewMarkdown.refresh",
+        "title": "Line Preview Markdown: Refresh"
+      },
+      {
+        "command": "linePreviewMarkdown.togglePanel",
+        "title": "Line Preview Markdown: Toggle Panel"
+      }
+    ],
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "linePreviewMarkdownPanel",
+          "title": "Line Preview"
+        }
+      ]
+    },
+    "views": {
+      "linePreviewMarkdownPanel": [
+        {
+          "type": "webview",
+          "id": "linePreviewMarkdown.preview",
+          "name": "Preview"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Line Preview Markdown",
+      "properties": {
+        "linePreviewMarkdown.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inline markdown previews."
+        },
+        "linePreviewMarkdown.maxPreviewLength": {
+          "type": "number",
+          "default": 120,
+          "minimum": 20,
+          "description": "Maximum preview length before truncation."
+        },
+        "linePreviewMarkdown.debounceMs": {
+          "type": "number",
+          "default": 150,
+          "minimum": 0,
+          "description": "Debounce time for rendering updates."
+        },
+        "linePreviewMarkdown.renderMode": {
+          "type": "string",
+          "enum": [
+            "line",
+            "paragraph"
+          ],
+          "default": "line",
+          "description": "Render the current line or the surrounding paragraph."
+        },
+        "linePreviewMarkdown.theme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
+          "default": "auto",
+          "description": "Preview theme color mode."
+        },
+        "linePreviewMarkdown.excludeLanguages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Language IDs that should not show previews."
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "linePreviewMarkdown.togglePanel",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "pnpm exec tsc -p .",
+    "watch": "pnpm exec tsc -w -p .",
+    "package": "pnpm exec vsce package --no-dependencies",
+    "test": "pnpm build && node ./out/test/runTest.js",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@types/node": "20.16.11",
+    "@types/vscode": "1.93.0",
+    "@vscode/vsce": "3.0.0",
+    "@vscode/test-electron": "2.5.2",
+    "@types/mocha": "10.0.10",
+    "husky": "9.1.7",
+    "mocha": "11.7.5",
+    "typescript": "5.6.3"
+  },
+  "packageManager": "pnpm@9.15.1"
+}
