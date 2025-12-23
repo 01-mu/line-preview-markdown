@@ -112,7 +112,8 @@
     "build": "pnpm exec tsc -p .",
     "watch": "pnpm exec tsc -w -p .",
     "package": "pnpm exec vsce package --no-dependencies",
-    "test": "pnpm build && node ./out/test/runTest.js"
+    "test": "pnpm build && node ./out/test/runTest.js",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/node": "20.16.11",
@@ -120,6 +121,7 @@
     "@vscode/vsce": "3.0.0",
     "@vscode/test-electron": "2.5.2",
     "@types/mocha": "10.0.10",
+    "husky": "9.1.7",
     "mocha": "11.7.5",
     "typescript": "5.6.3"
   },

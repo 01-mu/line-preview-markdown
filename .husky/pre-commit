@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+# Ensure pinned toolchain is used even in GUI Git clients.
+if command -v mise >/dev/null 2>&1; then
+  mise exec -- pnpm test
+  exit $?
+fi
+
+pnpm test
